@@ -9,7 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, and_, or_
 
 from app.core.database import get_db
-from app.core.security import get_current_user
+from app.api.deps import get_current_user
 from app.models import User, Interview, Candidate, JobPosition, ActivityLog
 from app.schemas.saas_schemas import (
     InterviewCreate,
