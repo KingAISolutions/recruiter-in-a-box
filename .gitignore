@@ -1,0 +1,53 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+.env
+.venv
+*.egg-info/
+dist/
+build/
+eggs/
+*.egg
+
+# Backend
+backend/instance/
+backend/.pytest_cache/
+*.db
+*.sqlite
+
+# Frontend
+node_modules/
+dist/
+.env.local
+.env.production.local
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.DS_Store
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Uploads
+uploads/
+*.pdf
+
+# Logs
+logs/
+*.log
+
+# Docker
+.dockerignore
+
+# Misc
+*.bak
+*.tmp
