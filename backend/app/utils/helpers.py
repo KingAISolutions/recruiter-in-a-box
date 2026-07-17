@@ -3,6 +3,13 @@ from typing import Dict, List, Any, Optional
 import pdfplumber
 from pathlib import Path
 
+# Optional: python-magic for file content validation
+try:
+    import magic
+    HAS_MAGIC = True
+except ImportError:
+    HAS_MAGIC = False
+
 
 def extract_text_from_pdf(pdf_path: str) -> str:
     """Extract text content from a PDF file."""
@@ -184,18 +191,67 @@ def interpolate_template(template_body: str, variables: Dict[str, str]) -> str:
 
 
 def generate_filename(original_filename: str, user_id: str) -> str:
-    """Generate unique filename for uploaded files."""
+    """Generate unique, sanitized filename for uploaded files."""
     import uuid
+    
+    # Get extension and sanitize
     extension = Path(original_filename).suffix.lower()
-    unique_id = uuid.uuid4().hex[:8]
-    return f"{user_id}/{unique_id}{extension}"
+    safe_extension = re.sub(r'[^a-zA-Z0-9]', '', extension)
+    
+    # Sanitize original filename
+    safe_original = re.sub(r'[^a-zA-Z0-9._-]', '_', original_filename)
+    safe_original = safe_original[:50]  # Limit length
+    
+    # Generate unique ID
+    unique_id = uuid.uuid4().hex[:16]
+    
+    return f"{user_id}/{unique_id}_{safe_original}"
 
 
-def validate_file_type(filename: str) -> bool:
-    """Validate that the file is a PDF."""
+def validate_file_type(filename: str, content: bytes = None) -> tuple[bool, str]:
+    """
+    Validate file type using both extension and MIME type.
+    
+    Returns:
+        Tuple of (is_valid, error_message)
+    """
     allowed_extensions = {'.pdf'}
+    allowed_mime_types = {'application/pdf'}
+    
+    # Check extension
     extension = Path(filename).suffix.lower()
-    return extension in allowed_extensions
+    if extension not in allowed_extensions:
+        return False, f"File type not allowed. Expected PDF file, got {extension}"
+    
+    # Check MIME type if content provided and magic is available
+    if content and HAS_MAGIC:
+        try:
+            mime = magic.from_buffer(content, mime=True)
+            if mime not in allowed_mime_types:
+                return False, f"File content type not allowed. Detected: {mime}"
+        except Exception:
+            # If magic fails, still allow based on extension
+            pass
+    
+    return True, ""
+
+
+def validate_file_size(size_bytes: int, max_size: int) -> tuple[bool, str]:
+    """Validate file size."""
+    if size_bytes > max_size:
+        max_mb = max_size / (1024 * 1024)
+        return False, f"File too large. Maximum size is {max_mb:.1f}MB"
+    return True, ""
+
+
+def sanitize_filename(filename: str) -> str:
+    """Sanitize filename to prevent path traversal."""
+    # Remove path components
+    filename = Path(filename).name
+    # Remove special characters
+    filename = re.sub(r'[^a-zA-Z0-9._-]', '_', filename)
+    # Limit length
+    return filename[:100]
 
 
 def format_file_size(size_bytes: int) -> str:

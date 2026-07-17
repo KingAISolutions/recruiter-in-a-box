@@ -6,6 +6,7 @@ from app.models.models import (
     EmailTemplate,
     SentEmail,
     ActivityLog,
+    TokenBlacklist,
 )
 
 from app.models.subscription_models import (
@@ -25,6 +26,7 @@ __all__ = [
     "EmailTemplate",
     "SentEmail",
     "ActivityLog",
+    "TokenBlacklist",
     "Subscription",
     "TeamMember",
     "Interview",

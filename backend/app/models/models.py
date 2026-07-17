@@ -1,6 +1,6 @@
 import uuid
 from datetime import datetime
-from sqlalchemy import Column, String, Text, Boolean, Integer, ForeignKey, DateTime, JSON
+from sqlalchemy import Column, String, Text, Boolean, Integer, ForeignKey, DateTime, JSON, Index
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 from app.core.database import Base
@@ -15,8 +15,12 @@ class User(Base):
     full_name = Column(String(255), nullable=False)
     company_name = Column(String(255), nullable=True)
     email_verified = Column(Boolean, default=False)
+    is_active = Column(Boolean, default=True)  # Security: account active status
+    role = Column(String(50), default="member")  # Security: owner, admin, member
+    is_owner = Column(Boolean, default=False)  # First user is owner
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    last_login_at = Column(DateTime, nullable=True)  # Audit: last login timestamp
 
     # Relationships
     candidates = relationship("Candidate", back_populates="user", cascade="all, delete-orphan")
@@ -152,3 +156,22 @@ class ActivityLog(Base):
     # Relationships
     user = relationship("User", back_populates="activity_logs")
     candidate = relationship("Candidate", back_populates="activity_logs")
+
+
+class TokenBlacklist(Base):
+    """
+    Stores blacklisted JWT tokens for revocation.
+    Used for logout and password change invalidation.
+    """
+    __tablename__ = "token_blacklist"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    jti = Column(String(100), unique=True, nullable=False, index=True)  # JWT ID
+    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=True)
+    expires_at = Column(DateTime, nullable=False)
+    blacklisted_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+
+    # Index for cleanup queries
+    __table_args__ = (
+        Index('idx_token_blacklist_expires_at', 'expires_at'),
+    )
